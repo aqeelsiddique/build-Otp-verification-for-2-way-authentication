@@ -1,8 +1,14 @@
 const express=require('express');
 const bodyparser=require('body-parser');
 const nodemailer=require('nodemailer');
+var fs = require("fs");
+
 const path=require('path');
 var exphbs = require('express-handlebars');
+const mongoose = require('mongoose');
+const register = require("./model/user")
+const multer = require("multer");
+
 
 const app=express();
 
@@ -17,9 +23,50 @@ app.set('view engine','handlebars');
 app.use(bodyparser.urlencoded({extended : false}));
 app.use(bodyparser.json());
 
+
+////database connection////
+const db = process.env.MONGODB_URI || 'mongodb+srv://Aqeel:aqeel12345@cluster0.uhg7y9z.mongodb.net/visiosparkwebsite?retryWrites=true&w=majority';
+
+// Connect to MongoDB instance
+mongoose
+  .connect(db, {
+   useNewUrlParser: true, 
+   useUnifiedTopology: true 
+  })
+  .then(() => console.log('MongoDB connected successfully.'))
+  .catch(err => console.log('MongoDB connection error: ' + err));
 //static folder
+
+
+
 app.use('/public',express.static(path.join(__dirname, 'public')));
 app.set('views', path.join(__dirname, 'views'));
+
+
+
+// SET STORAGE
+let storage = multer.diskStorage({
+    destination: "./public/images", //directory (folder) setting
+    filename: (req, file, cb) => {
+      cb(null, Date.now() + file.originalname); // file name setting
+    },
+  });
+  var upload = multer({
+    storage: storage,
+    fileFilter: (req, file, cb) => {
+      if (
+        file.mimetype == "image/jpeg" ||
+        file.mimetype == "image/jpg" ||
+        file.mimetype == "image/png" ||
+        file.mimetype == "image/gif"
+      ) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+        cb(new Error("Only jpeg,  jpg , png, and gif Image allow"));
+      }
+    },
+  });
 
 
 app.get('/',function(req,res){
@@ -41,16 +88,26 @@ let transporter = nodemailer.createTransport({
     port: 465,
     secure: true,
     service : 'Gmail',
-        auth: {
-      user: 'email',
-      pass: 'pass',
+    auth: {
+      user: 'webdeveloperaqeel@gmail.com',
+      pass: 'uxhcuiszeebphvvl',
     }
     
 });
 ////////////////post method
 
-app.post('/send',function(req,res){
-    email=req.body.email;
+app.post('/send',upload.single("profile"), function(req,res){
+    console.log(req.file);
+
+    name =req.body.name,
+    lastname =req.body.lastname,
+
+    
+    email =req.body.email,
+    password = req.body.password,
+    cpassword = req.body.cpassword,
+    phone = req.body.phone
+
 
      // send mail with defined transport object
     var mailOptions={
@@ -91,17 +148,56 @@ app.post('/resend',function(req,res){
 
 //////////verify code 
 
-app.post('/verify',function(req,res){
+app.post('/verify',upload.single("profile"),function(req,res){
 
-    if(req.body.otp==otp){
-        res.send("You has been successfully registered");
+    
+
+    if (req.body.otp == otp) {
+        // Create a new Registration object and save it to the database
+        const registration = new register({
+
+            name,
+            lastname,
+
+            
+            email,
+            password,
+            cpassword,
+            phone,
+            profileImage: {
+                data: fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename)),
+                contentType: 'image/png' // Change the content type to match your image format
+              }
+
+           
+
+            // Add any other fields that you want to store
+        });
+        registration.save()
+            .then(() => {
+                // Send a success message to the user
+                res.send('You have been successfully registered!');
+            })
+            .catch((err) => {
+                // Render the OTP verification form with an error message
+                res.render('otp', { msg: 'Error saving registration data to database' });
+            });
+
+            console.log(registration)
+
+    } else {
+        // Render the OTP verification form with an error message
+        res.render('otp', { msg: 'OTP is incorrect' });
     }
-    else{
-        res.render('otp',{msg : 'otp is incorrect'});
-    }
+
+    // if(req.body.otp==otp){
+
+    //     res.send("You has been successfully registered");
+    // }
+    // else{
+    //     res.render('otp',{msg : 'otp is incorrect'});
+    // }
 }); 
-
-
 
 //defining port
 const PORT=process.env.PORT||3000;
