@@ -8,6 +8,7 @@ var exphbs = require('express-handlebars');
 const mongoose = require('mongoose');
 const register = require("./model/user")
 const multer = require("multer");
+const { login } = require('./user');
 
 
 const app=express();
@@ -97,7 +98,7 @@ let transporter = nodemailer.createTransport({
 ////////////////post method
 
 app.post('/send',upload.single("profile"), function(req,res){
-    console.log(req.file);
+  console.log(obj.filename); // Replace 'obj' with the name of the object you are trying to access
 
     name =req.body.name,
     lastname =req.body.lastname,
@@ -107,6 +108,7 @@ app.post('/send',upload.single("profile"), function(req,res){
     password = req.body.password,
     cpassword = req.body.cpassword,
     phone = req.body.phone
+
 
 
      // send mail with defined transport object
@@ -164,10 +166,10 @@ app.post('/verify',upload.single("profile"),function(req,res){
             password,
             cpassword,
             phone,
-            profileImage: {
-                data: fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename)),
-                contentType: 'image/png' // Change the content type to match your image format
-              }
+
+         
+            
+
 
            
 
@@ -198,6 +200,11 @@ app.post('/verify',upload.single("profile"),function(req,res){
     //     res.render('otp',{msg : 'otp is incorrect'});
     // }
 }); 
+
+app.get("/login" , (req, res) => {
+  res.render('loginuser')
+})
+app.post("/login" , login)
 
 //defining port
 const PORT=process.env.PORT||3000;
