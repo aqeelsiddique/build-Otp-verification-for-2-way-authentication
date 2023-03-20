@@ -5,7 +5,7 @@ const crypto = require("crypto")
 // const jwt = require('jsonwebtoken')
 ///schema represent documenet mtlb ju hum database data save krthy hae wu humy kis tara chaiyae hothy us liyae used krthy hae
 const userSchema = new mongoose.Schema({
-    name: {
+    Name: {
         type: String,
         require: true
     },
@@ -30,11 +30,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         require: true
     },
-    image: {
-        type: String,
-        // require: true
-       
-    },
+    profileImage: {
+        data: Buffer,
+        contentType: String
+    }
 
     
     
@@ -81,9 +80,7 @@ userSchema.methods.generateAuthToken = function() {
 
 /////////reset token password
 userSchema.methods.getResetPasswordToken = async function() {
-
-   
-    const resettoken = crypto.randomBytes(20).toString("hex")
+const resettoken = crypto.randomBytes(20).toString("hex")
 
 ///////////hashing and resetpasswordtoken to userShema
 
